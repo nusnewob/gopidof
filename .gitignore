@@ -8,6 +8,10 @@
 *.so
 *.dylib
 
+# Built binary
+pidof
+pidof-*
+
 # Test binary, built with `go test -c`
 *.test
 
