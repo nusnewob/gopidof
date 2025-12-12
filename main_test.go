@@ -18,7 +18,7 @@ func TestMainHelp(t *testing.T) {
 
 	cmd := exec.Command(os.Args[0], "-test.run=TestMainHelp")
 	cmd.Env = append(os.Environ(), "TEST_MAIN=1")
-	cmd.Args = append([]string{os.Args[0], "--help"})
+	cmd.Args = []string{os.Args[0], "--help"}
 
 	output, err := cmd.CombinedOutput()
 	// Help should exit with non-zero status, but we just verify it runs
