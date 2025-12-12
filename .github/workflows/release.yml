@@ -1,0 +1,134 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    name: Run Tests Before Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24.x"
+
+      - name: Get dependencies
+        run: go mod download
+
+      - name: Run tests
+        run: go test -v -race ./...
+
+      - name: Run go vet
+        run: go vet ./...
+
+  build-and-release:
+    name: Build and Create Release
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24.x"
+
+      - name: Get dependencies
+        run: go mod download
+
+      - name: Get the version
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - name: Build binaries
+        run: |
+          # Create dist directory
+          mkdir -p dist
+
+          # Build for different platforms
+          GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o dist/pidof-linux-amd64
+          GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o dist/pidof-linux-arm64
+          GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o dist/pidof-darwin-amd64
+          GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o dist/pidof-darwin-arm64
+
+      - name: Create source code archive
+        run: |
+          # Create source code tarball
+          git archive --format=tar.gz --prefix=gopidof-${{ steps.get_version.outputs.VERSION }}/ HEAD > dist/gopidof-${{ steps.get_version.outputs.VERSION }}-source.tar.gz
+
+          # Calculate SHA256 for source archive
+          cd dist
+          sha256sum gopidof-${{ steps.get_version.outputs.VERSION }}-source.tar.gz > gopidof-${{ steps.get_version.outputs.VERSION }}-source.tar.gz.sha256
+
+      - name: Create gzipped tar archives
+        run: |
+          cd dist
+
+          # Create tar.gz for each binary
+          for file in pidof-*; do
+            if [ -f "$file" ]; then
+              tar -czf "${file}.tar.gz" "$file"
+              # Calculate SHA256
+              sha256sum "${file}.tar.gz" > "${file}.tar.gz.sha256"
+            fi
+          done
+
+          # List all created files
+          ls -lh
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist/pidof-*.tar.gz
+            dist/pidof-*.tar.gz.sha256
+            dist/gopidof-*.tar.gz
+            dist/gopidof-*.tar.gz.sha256
+          body: |
+            Release ${{ steps.get_version.outputs.VERSION }}
+
+            ## Downloads
+
+            - **Binary releases**: Pre-compiled binaries for Linux and macOS
+            - **Source code**: `gopidof-${{ steps.get_version.outputs.VERSION }}-source.tar.gz`
+
+            ## Installation
+
+            Download the appropriate binary for your system, extract it, and move to a directory in your PATH.
+
+            ### Linux (amd64)
+            ```bash
+            wget https://github.com/${{ github.repository }}/releases/download/${{ steps.get_version.outputs.VERSION }}/pidof-linux-amd64.tar.gz
+            tar -xzf pidof-linux-amd64.tar.gz
+            sudo mv pidof-linux-amd64 /usr/local/bin/pidof
+            chmod +x /usr/local/bin/pidof
+            ```
+
+            ### macOS (Apple Silicon)
+            ```bash
+            wget https://github.com/${{ github.repository }}/releases/download/${{ steps.get_version.outputs.VERSION }}/pidof-darwin-arm64.tar.gz
+            tar -xzf pidof-darwin-arm64.tar.gz
+            sudo mv pidof-darwin-arm64 /usr/local/bin/pidof
+            chmod +x /usr/local/bin/pidof
+            ```
+
+            ### Verify checksums
+            ```bash
+            sha256sum -c pidof-*.tar.gz.sha256
+            ```
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
