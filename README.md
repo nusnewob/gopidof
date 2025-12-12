@@ -8,6 +8,13 @@ Homebrew's [`pidof`](https://formulae.brew.sh/formula/pidof) package has been de
 
 ## Installation
 
+### Via Homebrew (macOS/Linux)
+
+```bash
+brew tap nusnewob/tap
+brew install gopidof
+```
+
 ### From releases
 
 Download the latest binary from the [releases page](https://github.com/nusnewob/gopidof/releases).
