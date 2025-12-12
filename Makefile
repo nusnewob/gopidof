@@ -11,6 +11,7 @@ GOGET=$(GOCMD) get
 GOMOD=$(GOCMD) mod
 GOFMT=$(GOCMD) fmt
 GOVET=$(GOCMD) vet
+GOTEST=$(GOCMD) test -v
 
 # Build flags
 LDFLAGS=-ldflags "-s -w"
@@ -74,3 +75,8 @@ uninstall:
 # Run all checks
 .PHONY: check
 check: fmt vet
+
+# Run tests
+.PHONY: test
+test:
+	$(GOTEST)
