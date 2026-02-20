@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"os/exec"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -185,13 +186,7 @@ func TestFindProcessByName(t *testing.T) {
 
 	// Check if our own PID is in the list (if we're running via go test)
 	selfStr := strconv.Itoa(self)
-	found := false
-	for _, pid := range pids {
-		if pid == selfStr {
-			found = true
-			break
-		}
-	}
+	found := slices.Contains(pids, selfStr)
 
 	if found {
 		t.Logf("Current test process PID %s found in results", selfStr)

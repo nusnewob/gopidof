@@ -4,6 +4,7 @@ package main
 
 import (
 	"os"
+	"slices"
 	"strconv"
 	"testing"
 )
@@ -44,13 +45,7 @@ func TestFindPIDsSelfDarwin(t *testing.T) {
 
 	// Check if our PID is in the results
 	selfStr := strconv.Itoa(self)
-	found := false
-	for _, pid := range pids {
-		if pid == selfStr {
-			found = true
-			break
-		}
-	}
+	found := slices.Contains(pids, selfStr)
 
 	if found {
 		t.Logf("Successfully found test process with PID %s", selfStr)
